@@ -3,9 +3,24 @@ import time
 from datetime import date
 import boto3
 
-def create_association(instance_id):
-    ssm = boto3.client('ssm')
+ssm = boto3.client('ssm')
 
+def query_association(instance_id):
+    query_association_response = ssm.list_associations(
+        AssociationFilterList = [
+            {
+                "key": "AssociationName",
+                "value": "ssm-patch-portal-{}".format(instance_id),
+            }
+        ],
+    )
+
+    if len(query_association_response['Associations']) > 0:
+        return query_association_response['Associations'][0]
+    else:
+        return None
+
+def create_association(instance_id):
     create_association_response = ssm.create_association(
         Name = "AWS-RunPatchBaseline",
         Parameters = {
@@ -73,9 +88,23 @@ def handler(event, context):
             })
         }
     
-    response = create_association(request['instanceId'])
+    instance_id = request['instanceId']
+
+    # Check if patch association already exist
+    query_association_response = query_association(instance_id)
+
+    if query_association_response is None:
+        # Create a new association if none exist
+        create_association_response = create_association(instance_id)
+        association = create_association_response["AssociationDescription"]
+    else:
+        association = query_association_response
+    
+    response = {
+        "associationId": association["AssociationId"] if "AssociationId" in association else ""
+    }
 
     return {
         "statusCode": 200,
-        "body": ""
+        "body": json.dumps(response)
     }

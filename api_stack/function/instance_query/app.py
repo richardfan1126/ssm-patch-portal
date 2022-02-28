@@ -112,7 +112,7 @@ def handler(event, context):
                 'name': ec2_names[instance_id] if instance_id in ec2_names else '',
                 'platformType': instance['PlatformType'] if 'PlatformType' in instance else '',
                 'platformName': instance['PlatformName'] if 'PlatformName' in instance else '',
-                'scanAssociation': patch_associations[instance_id] if instance_id in patch_associations else {},
+                'patchAssociation': patch_associations[instance_id] if instance_id in patch_associations else {},
             }
             
             instances.append(item)
