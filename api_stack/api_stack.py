@@ -28,10 +28,11 @@ class ApiStack(NestedStack):
                 iam.PolicyStatement(
                     actions = [
                         "ec2:DescribeInstances",
-                        "ssm:DescribeInstanceInformation"
+                        "ssm:DescribeInstanceInformation",
+                        "ssm:ListAssociations",
                     ],
                     resources = ["*"]
-                )
+                ),
             ]
         )
 
@@ -45,7 +46,7 @@ class ApiStack(NestedStack):
             runtime = aws_lambda.Runtime.PYTHON_3_8,
             code = aws_lambda.Code.from_asset('./api_stack/function/create_association/'),
             handler = 'app.handler',
-            timeout = aws_cdk.Duration.seconds(10),
+            timeout = aws_cdk.Duration.seconds(30),
         )
 
         create_association_function_policy = iam.ManagedPolicy(
@@ -59,7 +60,14 @@ class ApiStack(NestedStack):
                         "arn:aws:ssm:*:*:document/AWS-RunPatchBaseline",
                         "arn:aws:ec2:*:*:instance/*",
                     ]
-                )
+                ),
+                iam.PolicyStatement(
+                    actions = [
+                        "ssm:ListCommands",
+                        "ssm:CancelCommand",
+                    ],
+                    resources = ["*"]
+                ),
             ]
         )
 
