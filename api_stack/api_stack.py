@@ -10,8 +10,10 @@ from constructs import Construct
 
 class ApiStack(NestedStack):
     api_endpoint = None
+    bucket_name = None
 
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
+        self.bucket_name = kwargs.pop('bucket_name')
         super().__init__(scope, construct_id, **kwargs)
 
         instance_query_function = aws_lambda.Function(
@@ -47,6 +49,9 @@ class ApiStack(NestedStack):
             code = aws_lambda.Code.from_asset('./api_stack/function/create_patch_association/'),
             handler = 'app.handler',
             timeout = aws_cdk.Duration.seconds(30),
+            environment = {
+                "MAIN_BUCKET_NAME": self.bucket_name
+            }
         )
 
         create_patch_association_function_policy = iam.ManagedPolicy(

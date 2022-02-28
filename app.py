@@ -3,11 +3,11 @@ import os
 
 import aws_cdk as cdk
 
-from ssm_patch_portal.ssm_patch_portal_stack import SsmPatchPortalStack
+from ssm_patch_portal.ssm_patch_portal_stack import SsmPatchPortal
 
 
 app = cdk.App()
-SsmPatchPortalStack(app, "SsmPatchPortalStack",
+SsmPatchPortal(app, "SsmPatchPortal",
     # If you don't specify 'env', this stack will be environment-agnostic.
     # Account/Region-dependent features and context lookups will not work,
     # but a single synthesized template can be deployed anywhere.

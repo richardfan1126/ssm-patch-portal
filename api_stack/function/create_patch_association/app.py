@@ -1,3 +1,4 @@
+import os
 import json
 import time
 from datetime import date
@@ -21,10 +22,16 @@ def query_association(instance_id):
         return None
 
 def create_association(instance_id):
+    main_bucket_name = os.environ.get("MAIN_BUCKET_NAME")
+
+    if main_bucket_name is None:
+        raise Exception("Bucket name not found")
+
     create_association_response = ssm.create_association(
         Name = "AWS-RunPatchBaseline",
         Parameters = {
             "Operation": ["Install"],
+            "InstallOverrideList": ["s3://{}/InstallOverrideLists/{}.yml".format(main_bucket_name, instance_id)]
         },
         Targets = [
             {
@@ -78,33 +85,39 @@ def create_association(instance_id):
     return create_association_response
 
 def handler(event, context):
-    request = json.loads(event['body'])
+    try:
+        request = json.loads(event['body'])
 
-    if 'instanceId' not in request:
+        if 'instanceId' not in request:
+            return {
+                "statusCode": 400,
+                "body": json.dumps({
+                    "message": "instanceId not specified"
+                })
+            }
+        
+        instance_id = request['instanceId']
+
+        # Check if patch association already exist
+        query_association_response = query_association(instance_id)
+
+        if query_association_response is None:
+            # Create a new association if none exist
+            create_association_response = create_association(instance_id)
+            association = create_association_response["AssociationDescription"]
+        else:
+            association = query_association_response
+        
+        response = {
+            "associationId": association["AssociationId"] if "AssociationId" in association else ""
+        }
+
+        return {
+            "statusCode": 200,
+            "body": json.dumps(response)
+        }
+    except Exception as e:
         return {
             "statusCode": 400,
-            "body": json.dumps({
-                "message": "instanceId not specified"
-            })
+            "body": str(e)
         }
-    
-    instance_id = request['instanceId']
-
-    # Check if patch association already exist
-    query_association_response = query_association(instance_id)
-
-    if query_association_response is None:
-        # Create a new association if none exist
-        create_association_response = create_association(instance_id)
-        association = create_association_response["AssociationDescription"]
-    else:
-        association = query_association_response
-    
-    response = {
-        "associationId": association["AssociationId"] if "AssociationId" in association else ""
-    }
-
-    return {
-        "statusCode": 200,
-        "body": json.dumps(response)
-    }
