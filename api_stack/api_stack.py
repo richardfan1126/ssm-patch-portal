@@ -177,6 +177,14 @@ class ApiStack(NestedStack):
                     ],
                     resources = ["{}/*".format(self.bucket_arn)]
                 ),
+                iam.PolicyStatement(
+                    actions = [
+                        "ssm:DescribeAssociation",
+                        "ssm:DescribeAssociationExecutions",
+                        "ssm:StartAssociationsOnce",
+                    ],
+                    resources = ["*"]
+                ),
             ]
         )
 

@@ -1,7 +1,7 @@
 import os
 import json
 import time
-from datetime import date
+from datetime import datetime
 import boto3
 
 ssm = boto3.client('ssm')
@@ -47,11 +47,12 @@ def create_association(instance_id):
                 'OutputS3KeyPrefix': "CommandOutputs/" 
             }
         },
+        MaxConcurrency = "1",
         AssociationName = "ssm-patch-portal-{}".format(instance_id),
     )
 
     # Stop the first invocation of the newly created association
-    now = date.today()
+    now = datetime.now()
     now_string = now.strftime("%Y-%m-%dT%H:%M:%SZ")
     retry_time = 0
 
@@ -125,5 +126,7 @@ def handler(event, context):
     except Exception as e:
         return {
             "statusCode": 400,
-            "body": str(e)
+            "body": json.dumps({
+                "message": str(e)
+            })
         }

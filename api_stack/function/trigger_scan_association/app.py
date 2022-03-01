@@ -74,5 +74,7 @@ def handler(event, context):
     except Exception as e:
         return {
             "statusCode": 400,
-            "body": str(e)
+            "body": json.dumps({
+                "message": str(e)
+            })
         }
