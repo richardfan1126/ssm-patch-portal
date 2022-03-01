@@ -1,6 +1,7 @@
 from doctest import run_docstring_examples
 from aws_cdk import (
     NestedStack,
+    RemovalPolicy,
     aws_lambda,
     aws_apigateway as apigateway,
     aws_iam as iam
@@ -11,9 +12,11 @@ from constructs import Construct
 class ApiStack(NestedStack):
     api_endpoint = None
     bucket_name = None
+    bucket_arn = None
 
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         self.bucket_name = kwargs.pop('bucket_name')
+        self.bucket_arn = kwargs.pop('bucket_arn')
         super().__init__(scope, construct_id, **kwargs)
 
         instance_query_function = aws_lambda.Function(
@@ -87,7 +90,10 @@ class ApiStack(NestedStack):
             runtime = aws_lambda.Runtime.PYTHON_3_8,
             code = aws_lambda.Code.from_asset('./api_stack/function/trigger_scan_association/'),
             handler = 'app.handler',
-            timeout = aws_cdk.Duration.seconds(30),
+            timeout = aws_cdk.Duration.seconds(10),
+            environment = {
+                "MAIN_BUCKET_NAME": self.bucket_name
+            }
         )
 
         trigger_scan_association_function_policy = iam.ManagedPolicy(
@@ -123,7 +129,7 @@ class ApiStack(NestedStack):
             runtime = aws_lambda.Runtime.PYTHON_3_8,
             code = aws_lambda.Code.from_asset('./api_stack/function/query_missing_patch/'),
             handler = 'app.handler',
-            timeout = aws_cdk.Duration.seconds(30),
+            timeout = aws_cdk.Duration.seconds(10),
         )
 
         query_missing_patch_function_policy = iam.ManagedPolicy(
@@ -140,6 +146,42 @@ class ApiStack(NestedStack):
 
         query_missing_patch_function_role = query_missing_patch_function.role
         query_missing_patch_function_role.add_managed_policy(query_missing_patch_function_policy)
+
+
+        start_patch_function_dependencies = aws_lambda.LayerVersion(
+            self, "StartPatchFunctionDependencies",
+            removal_policy = RemovalPolicy.DESTROY,
+            compatible_runtimes = [aws_lambda.Runtime.PYTHON_3_8],
+            code = aws_lambda.Code.from_asset('./api_stack/layer/start_patch/'),
+        )
+
+        start_patch_function = aws_lambda.Function(
+            self, "StartPatchFunction",
+            runtime = aws_lambda.Runtime.PYTHON_3_8,
+            layers = [start_patch_function_dependencies],
+            code = aws_lambda.Code.from_asset('./api_stack/function/start_patch/'),
+            handler = 'app.handler',
+            timeout = aws_cdk.Duration.seconds(10),
+            environment = {
+                "MAIN_BUCKET_NAME": self.bucket_name
+            }
+        )
+
+        start_patch_function_policy = iam.ManagedPolicy(
+            self, "StartPatchFunctionPolicy",
+            statements = [
+                iam.PolicyStatement(
+                    actions = [
+                        "s3:PutObject",
+                        "s3:PutObjectAcl"
+                    ],
+                    resources = ["{}/*".format(self.bucket_arn)]
+                ),
+            ]
+        )
+
+        start_patch_function_role = start_patch_function.role
+        start_patch_function_role.add_managed_policy(start_patch_function_policy)
 
 
 
@@ -160,6 +202,9 @@ class ApiStack(NestedStack):
 
         api_missing_patch = api.root.add_resource('missing-patch')
         api_missing_patch.add_method('GET', apigateway.LambdaIntegration(query_missing_patch_function))
+
+        api_patch = api.root.add_resource('patch')
+        api_patch.add_method('POST', apigateway.LambdaIntegration(start_patch_function))
 
 
         self.api_endpoint = api.url

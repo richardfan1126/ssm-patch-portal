@@ -14,13 +14,17 @@ class SsmPatchPortal(Stack):
 
         ec2_iam_role_arns = aws_cdk.CfnParameter(
             self, "Ec2IamRoleArns",
+            description = "A comma-delimited list of IAM role ARNs that are attached to target EC2 instances.\n" +
+            "This is to grant EC2 instances permission to read the patch list from S3 bucket.",
         )
 
         s3_bucket_stack = S3BucketStack(self, "S3BucketStack",
             ec2_iam_role_arns = ec2_iam_role_arns
         )
+
         api_stack = ApiStack(self, "ApiStack",
-            bucket_name = s3_bucket_stack.main_bucket.bucket_name
+            bucket_name = s3_bucket_stack.main_bucket.bucket_name,
+            bucket_arn = s3_bucket_stack.main_bucket.bucket_arn
         )
 
         aws_cdk.CfnOutput(

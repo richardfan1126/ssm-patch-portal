@@ -151,5 +151,11 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
+# Synk
+.dccache
+
+# IDE
+.vscode/
+
 cdk.out/
 cdk.context.json

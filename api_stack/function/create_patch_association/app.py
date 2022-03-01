@@ -41,6 +41,12 @@ def create_association(instance_id):
                 ]
             }
         ],
+        OutputLocation = {
+            'S3Location': {
+                'OutputS3BucketName': main_bucket_name,
+                'OutputS3KeyPrefix': "CommandOutputs/" 
+            }
+        },
         AssociationName = "ssm-patch-portal-{}".format(instance_id),
     )
 

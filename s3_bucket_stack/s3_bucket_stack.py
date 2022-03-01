@@ -1,4 +1,3 @@
-from email import policy
 from aws_cdk import (
     NestedStack,
     aws_s3 as s3,
@@ -22,13 +21,23 @@ class S3BucketStack(NestedStack):
         )
         
         
-        # Allow EC2 instance read access on the bucket        
-        bucket_policy = iam.PolicyStatement(
+        # Allow EC2 instance read/write access on the bucket
+        override_list_read_policy = iam.PolicyStatement(
             actions = ["s3:GetObject"],
-            resources = [self.main_bucket.arn_for_objects("*")],
+            resources = [self.main_bucket.arn_for_objects("InstallOverrideLists/*")],
+        )
+
+        command_output_policy = iam.PolicyStatement(
+            actions = [
+                "s3:PutObject",
+                "s3:PutObjectAcl"
+            ],
+            resources = [self.main_bucket.arn_for_objects("CommandOutputs/*")],
         )
 
         for principal in aws_cdk.Fn.split(",", self.ec2_iam_role_arns.value_as_string):
-            bucket_policy.add_arn_principal(principal)
+            override_list_read_policy.add_arn_principal(principal)
+            command_output_policy.add_arn_principal(principal)
 
-        self.main_bucket.add_to_resource_policy(bucket_policy)
+        self.main_bucket.add_to_resource_policy(override_list_read_policy)
+        self.main_bucket.add_to_resource_policy(command_output_policy)
