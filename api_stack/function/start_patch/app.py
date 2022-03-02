@@ -83,6 +83,13 @@ def apply_association(association_id):
     return None
 
 def handler(event, context):
+    api_response = {
+        "headers": {
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Headers": "Origin, X-Requested-With, Content-Type, Accept"
+                }
+    }
+
     try:
         if event['body'] is None:
             raise Exception("Request body should not be empty")
@@ -116,15 +123,13 @@ def handler(event, context):
 
         execution['CreatedTime'] = execution['CreatedTime'].strftime("%Y-%m-%dT%H:%M:%SZ") if 'CreatedTime' in execution and execution['CreatedTime'] is not None else ""
         execution['LastExecutionDate'] = execution['LastExecutionDate'].strftime("%Y-%m-%dT%H:%M:%SZ") if 'LastExecutionDate' in execution and execution['LastExecutionDate'] is not None else ""
-
-        return {
-            "statusCode": 200,
-            "body": json.dumps(execution)
-        }
+        
+        api_response["statusCode"] = 200
+        api_response["body"] = json.dumps(execution)
     except Exception as e:
-        return {
-            "statusCode": 400,
-            "body": json.dumps({
-                "message": str(e)
-            })
-        }
+        api_response["statusCode"] = 400
+        api_response["body"] = json.dumps({
+            "message": str(e)
+        })
+    finally:
+        return api_response

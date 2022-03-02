@@ -10,7 +10,7 @@ import aws_cdk
 from constructs import Construct
 
 class ApiStack(NestedStack):
-    api_endpoint = None
+    api = None
     bucket_name = None
     bucket_arn = None
 
@@ -191,28 +191,50 @@ class ApiStack(NestedStack):
         start_patch_function_role = start_patch_function.role
         start_patch_function_role.add_managed_policy(start_patch_function_policy)
 
-
+        api_method_options = {
+            "authorization_type": apigateway.AuthorizationType.IAM,
+        }
 
         api = apigateway.RestApi(
-            self, "API",
+            self, "SsmPatchPortalAPI",
+            default_cors_preflight_options = apigateway.CorsOptions(
+                allow_origins = ['*'],
+                allow_headers = [
+                    'Authorization',
+                    'Content-Type',
+                    'X-Amz-Date',
+                    'X-Amz-Security-Token',
+                    'X-Api-Key'
+                ],
+                allow_methods = [
+                    'DELETE',
+                    'GET',
+                    'HEAD',
+                    'OPTIONS',
+                    'PATCH',
+                    'POST',
+                    'PUT'
+                ],
+                status_code = 200
+            ),
         )
 
         api_instances = api.root.add_resource('instances')
-        api_instances.add_method('GET', apigateway.LambdaIntegration(instance_query_function))
+        api_instances.add_method('GET', apigateway.LambdaIntegration(instance_query_function), **api_method_options)
 
         api_association = api.root.add_resource('association')
 
         api_association_patch = api_association.add_resource('patch')
-        api_association_patch.add_method('POST', apigateway.LambdaIntegration(create_patch_association_function))
+        api_association_patch.add_method('POST', apigateway.LambdaIntegration(create_patch_association_function), **api_method_options)
         
         api_association_scan = api_association.add_resource('scan')
-        api_association_scan.add_method('POST', apigateway.LambdaIntegration(trigger_scan_association_function))
+        api_association_scan.add_method('POST', apigateway.LambdaIntegration(trigger_scan_association_function), **api_method_options)
 
         api_missing_patch = api.root.add_resource('missing-patch')
-        api_missing_patch.add_method('GET', apigateway.LambdaIntegration(query_missing_patch_function))
+        api_missing_patch.add_method('GET', apigateway.LambdaIntegration(query_missing_patch_function), **api_method_options)
 
         api_patch = api.root.add_resource('patch')
-        api_patch.add_method('POST', apigateway.LambdaIntegration(start_patch_function))
+        api_patch.add_method('POST', apigateway.LambdaIntegration(start_patch_function), **api_method_options)
 
 
-        self.api_endpoint = api.url
+        self.api = api

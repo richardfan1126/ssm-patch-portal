@@ -2,14 +2,16 @@ import json
 import boto3
 
 def handler(event, context):
+    api_response = {
+        "headers": {
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Headers": "Origin, X-Requested-With, Content-Type, Accept"
+                }
+    }
+
     try:
         if event['queryStringParameters'] is None or 'instance-id' not in event['queryStringParameters']:
-            return {
-                "statusCode": 400,
-                "body": json.dumps({
-                    "message": "instance-id not specified"
-                })
-            }
+            raise Exception("instance-id not specified")
         
         instance_id = event['queryStringParameters']['instance-id']
         
@@ -51,18 +53,16 @@ def handler(event, context):
                 next_token = ssm_patch_response['NextToken']
             else:
                 next_token = None
-
-        return {
-            "statusCode": 200,
-            "body": json.dumps({
-                "count": len(patches),
-                "patches": patches
-            })
-        }
+        
+        api_response["statusCode"] = 200
+        api_response["body"] = json.dumps({
+            "count": len(patches),
+            "patches": patches
+        })
     except Exception as e:
-        return {
-            "statusCode": 400,
-            "body": json.dumps({
-                "message": str(e)
-            })
-        }
+        api_response["statusCode"] = 400
+        api_response["body"] = json.dumps({
+            "message": str(e)
+        })
+    finally:
+        return api_response

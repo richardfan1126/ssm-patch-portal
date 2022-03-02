@@ -5,6 +5,7 @@ import aws_cdk
 from constructs import Construct
 
 from api_stack.api_stack import ApiStack
+from cognito_stack.cognito_stack import CognitoStack
 from s3_bucket_stack.s3_bucket_stack import S3BucketStack
 
 class SsmPatchPortal(Stack):
@@ -22,12 +23,32 @@ class SsmPatchPortal(Stack):
             ec2_iam_role_arns = ec2_iam_role_arns
         )
 
+        
         api_stack = ApiStack(self, "ApiStack",
             bucket_name = s3_bucket_stack.main_bucket.bucket_name,
             bucket_arn = s3_bucket_stack.main_bucket.bucket_arn
         )
 
+        cognito_stack = CognitoStack(self, "CognitoStack",
+            api_id = api_stack.api.rest_api_id
+        )
+
         aws_cdk.CfnOutput(
-            self, "QueryApiEndpoint",
-            value = api_stack.api_endpoint
+            self, "ApiEndpoint",
+            value = api_stack.api.url.rstrip("/")
+        )
+
+        aws_cdk.CfnOutput(
+            self, "IdentityPoolId",
+            value = cognito_stack.identity_pool.ref
+        )
+
+        aws_cdk.CfnOutput(
+            self, "UserPoolId",
+            value = cognito_stack.user_pool.user_pool_id
+        )
+
+        aws_cdk.CfnOutput(
+            self, "UserPoolWebClientId",
+            value = cognito_stack.user_pool_client.user_pool_client_id
         )

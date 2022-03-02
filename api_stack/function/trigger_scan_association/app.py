@@ -46,6 +46,13 @@ def create_association():
     return create_association_response
 
 def handler(event, context):
+    api_response = {
+        "headers": {
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Headers": "Origin, X-Requested-With, Content-Type, Accept"
+                }
+    }
+
     try:
         # Check if patch scan association already exist
         query_association_response = query_association()
@@ -67,14 +74,12 @@ def handler(event, context):
             "associationId": association["AssociationId"] if "AssociationId" in association else ""
         }
 
-        return {
-            "statusCode": 200,
-            "body": json.dumps(response)
-        }
+        api_response["statusCode"] = 200
+        api_response["body"] = json.dumps(response)
     except Exception as e:
-        return {
-            "statusCode": 400,
-            "body": json.dumps({
-                "message": str(e)
-            })
-        }
+        api_response["statusCode"] = 400
+        api_response["body"] = json.dumps({
+            "message": str(e)
+        })
+    finally:
+        return api_response
