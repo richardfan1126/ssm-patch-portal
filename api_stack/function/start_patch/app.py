@@ -11,6 +11,53 @@ import yaml
 s3 = boto3.client('s3')
 ssm = boto3.client('ssm')
 
+def query_association(instance_id):
+    query_association_response = ssm.list_associations(
+        AssociationFilterList = [
+            {
+                "key": "AssociationName",
+                "value": "ssm-patch-portal-{}".format(instance_id),
+            }
+        ],
+    )
+
+    if len(query_association_response['Associations']) > 0:
+        return query_association_response['Associations'][0]
+    else:
+        return None
+
+def create_association(instance_id):
+    main_bucket_name = os.environ.get("MAIN_BUCKET_NAME")
+
+    if main_bucket_name is None:
+        raise Exception("Bucket name not found")
+
+    create_association_response = ssm.create_association(
+        Name = "AWS-RunPatchBaseline",
+        Parameters = {
+            "Operation": ["Install"],
+            "InstallOverrideList": ["s3://{}/InstallOverrideLists/{}.yml".format(main_bucket_name, instance_id)]
+        },
+        Targets = [
+            {
+                "Key": "InstanceIds",
+                "Values": [
+                    instance_id
+                ]
+            }
+        ],
+        OutputLocation = {
+            'S3Location': {
+                'OutputS3BucketName': main_bucket_name,
+                'OutputS3KeyPrefix': "CommandOutputs/" 
+            }
+        },
+        MaxConcurrency = "1",
+        AssociationName = "ssm-patch-portal-{}".format(instance_id),
+    )
+
+    return create_association_response
+
 def export_override_list(instance_id, patches):
     bucket_name = os.environ.get('MAIN_BUCKET_NAME')
 
@@ -39,18 +86,6 @@ def export_override_list(instance_id, patches):
         bucket_name,
         "InstallOverrideLists/{}".format(file_name)
     )
-
-# Check if association linked to the correct instance
-def check_association(instance_id, association_id):
-    get_association_response = ssm.describe_association(
-        AssociationId = association_id,
-    )
-    
-    for target in get_association_response['AssociationDescription']['Targets']:
-        if target['Key'] == 'InstanceIds' and len(target['Values']) == 1 and target['Values'][0] == instance_id:
-            return True
-    
-    return False
 
 def apply_association(association_id):
     now = datetime.now() - timedelta(seconds = 5)
@@ -99,9 +134,6 @@ def handler(event, context):
         if 'instanceId' not in request:
             raise Exception("instanceId not specified")
 
-        if 'associationId' not in request:
-            raise Exception("associationId not specified")
-
         if 'patches' not in request:
             raise Exception("patches not specified")
 
@@ -109,12 +141,19 @@ def handler(event, context):
             raise Exception("patches must be a list")
 
         instance_id = request['instanceId']
-        association_id = request['associationId']
         patches = request['patches']
 
-        if not check_association(instance_id, association_id):
-            raise Exception("associationId and instanceId do not match")
+        # Check if patch association already exist
+        query_association_response = query_association(instance_id)
 
+        if query_association_response is None:
+            # Create a new association if none exist
+            create_association_response = create_association(instance_id)
+            association = create_association_response["AssociationDescription"]
+        else:
+            association = query_association_response
+
+        association_id = association['AssociationId']
         export_override_list(instance_id, patches)
         execution = apply_association(association_id)
 

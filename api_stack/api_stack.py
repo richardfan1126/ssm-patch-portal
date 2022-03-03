@@ -46,45 +46,6 @@ class ApiStack(NestedStack):
 
 
 
-        create_patch_association_function = aws_lambda.Function(
-            self, "CreatePatchAssociationFunction",
-            runtime = aws_lambda.Runtime.PYTHON_3_8,
-            code = aws_lambda.Code.from_asset('./api_stack/function/create_patch_association/'),
-            handler = 'app.handler',
-            timeout = aws_cdk.Duration.seconds(30),
-            environment = {
-                "MAIN_BUCKET_NAME": self.bucket_name
-            }
-        )
-
-        create_patch_association_function_policy = iam.ManagedPolicy(
-            self, "CreatePatchAssociationFunctionPolicy",
-            statements = [
-                iam.PolicyStatement(
-                    actions = [
-                        "ssm:CreateAssociation",
-                    ],
-                    resources = [
-                        "arn:aws:ssm:*:*:document/AWS-RunPatchBaseline",
-                        "arn:aws:ec2:*:*:instance/*",
-                    ]
-                ),
-                iam.PolicyStatement(
-                    actions = [
-                        "ssm:ListCommands",
-                        "ssm:CancelCommand",
-                        "ssm:ListAssociations",
-                    ],
-                    resources = ["*"]
-                ),
-            ]
-        )
-
-        create_patch_association_function_role = create_patch_association_function.role
-        create_patch_association_function_role.add_managed_policy(create_patch_association_function_policy)
-
-
-
         trigger_scan_association_function = aws_lambda.Function(
             self, "TriggerScanAssociationFunction",
             runtime = aws_lambda.Runtime.PYTHON_3_8,
@@ -152,28 +113,30 @@ class ApiStack(NestedStack):
 
 
 
-        query_missing_patch_function = aws_lambda.Function(
-            self, "QueryMissingPatchFunction",
+        get_instance_detail_function = aws_lambda.Function(
+            self, "GetInstanceDetailFunction",
             runtime = aws_lambda.Runtime.PYTHON_3_8,
-            code = aws_lambda.Code.from_asset('./api_stack/function/query_missing_patch/'),
+            code = aws_lambda.Code.from_asset('./api_stack/function/get_instance_detail/'),
             handler = 'app.handler',
             timeout = aws_cdk.Duration.seconds(10),
         )
 
-        query_missing_patch_function_policy = iam.ManagedPolicy(
-            self, "QueryMissingPatchFunctionPolicy",
+        get_instance_detail_function_policy = iam.ManagedPolicy(
+            self, "GetInstanceDetailFunctionPolicy",
             statements = [
                 iam.PolicyStatement(
                     actions = [
                         "ssm:DescribeInstancePatches",
+                        "ssm:ListAssociations",
+                        "ec2:DescribeInstances",
                     ],
                     resources = ["*"]
                 ),
             ]
         )
 
-        query_missing_patch_function_role = query_missing_patch_function.role
-        query_missing_patch_function_role.add_managed_policy(query_missing_patch_function_policy)
+        get_instance_detail_function_role = get_instance_detail_function.role
+        get_instance_detail_function_role.add_managed_policy(get_instance_detail_function_policy)
 
 
         start_patch_function_dependencies = aws_lambda.LayerVersion(
@@ -207,11 +170,20 @@ class ApiStack(NestedStack):
                 ),
                 iam.PolicyStatement(
                     actions = [
-                        "ssm:DescribeAssociation",
                         "ssm:DescribeAssociationExecutions",
                         "ssm:StartAssociationsOnce",
+                        "ssm:ListAssociations",
                     ],
                     resources = ["*"]
+                ),
+                iam.PolicyStatement(
+                    actions = [
+                        "ssm:CreateAssociation",
+                    ],
+                    resources = [
+                        "arn:aws:ssm:*:*:document/AWS-RunPatchBaseline",
+                        "arn:aws:ec2:*:*:instance/*",
+                    ]
                 ),
             ]
         )
@@ -252,15 +224,12 @@ class ApiStack(NestedStack):
 
         api_association = api.root.add_resource('association')
 
-        api_association_patch = api_association.add_resource('patch')
-        api_association_patch.add_method('POST', apigateway.LambdaIntegration(create_patch_association_function), **api_method_options)
-        
         api_association_scan = api_association.add_resource('scan')
         api_association_scan.add_method('GET', apigateway.LambdaIntegration(query_scan_status_function), **api_method_options)
         api_association_scan.add_method('POST', apigateway.LambdaIntegration(trigger_scan_association_function), **api_method_options)
 
-        api_missing_patch = api.root.add_resource('missing-patch')
-        api_missing_patch.add_method('GET', apigateway.LambdaIntegration(query_missing_patch_function), **api_method_options)
+        api_missing_patch = api.root.add_resource('detail')
+        api_missing_patch.add_method('GET', apigateway.LambdaIntegration(get_instance_detail_function), **api_method_options)
 
         api_patch = api.root.add_resource('patch')
         api_patch.add_method('POST', apigateway.LambdaIntegration(start_patch_function), **api_method_options)
