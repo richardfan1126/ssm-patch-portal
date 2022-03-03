@@ -52,3 +52,8 @@ class SsmPatchPortal(Stack):
             self, "UserPoolWebClientId",
             value = cognito_stack.user_pool_client.user_pool_client_id
         )
+
+        aws_cdk.CfnOutput(
+            self, "Region",
+            value = aws_cdk.Fn.ref("AWS::Region")
+        )

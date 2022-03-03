@@ -34,7 +34,7 @@ class ApiStack(NestedStack):
                     actions = [
                         "ec2:DescribeInstances",
                         "ssm:DescribeInstanceInformation",
-                        "ssm:ListAssociations",
+                        "ssm:DescribeInstancePatchStates",
                     ],
                     resources = ["*"]
                 ),
@@ -121,6 +121,34 @@ class ApiStack(NestedStack):
 
         trigger_scan_association_function_role = trigger_scan_association_function.role
         trigger_scan_association_function_role.add_managed_policy(trigger_scan_association_function_policy)
+
+
+
+        query_scan_status_function = aws_lambda.Function(
+            self, "QueryScanStatusFunction",
+            runtime = aws_lambda.Runtime.PYTHON_3_8,
+            code = aws_lambda.Code.from_asset('./api_stack/function/query_scan_status/'),
+            handler = 'app.handler',
+            timeout = aws_cdk.Duration.seconds(10),
+            environment = {
+                "MAIN_BUCKET_NAME": self.bucket_name
+            }
+        )
+
+        query_scan_status_function_policy = iam.ManagedPolicy(
+            self, "QueryScanStatusFunctionPolicy",
+            statements = [
+                iam.PolicyStatement(
+                    actions = [
+                        "ssm:ListAssociations",
+                    ],
+                    resources = ["*"]
+                ),
+            ]
+        )
+
+        query_scan_status_function_role = query_scan_status_function.role
+        query_scan_status_function_role.add_managed_policy(query_scan_status_function_policy)
 
 
 
@@ -228,6 +256,7 @@ class ApiStack(NestedStack):
         api_association_patch.add_method('POST', apigateway.LambdaIntegration(create_patch_association_function), **api_method_options)
         
         api_association_scan = api_association.add_resource('scan')
+        api_association_scan.add_method('GET', apigateway.LambdaIntegration(query_scan_status_function), **api_method_options)
         api_association_scan.add_method('POST', apigateway.LambdaIntegration(trigger_scan_association_function), **api_method_options)
 
         api_missing_patch = api.root.add_resource('missing-patch')

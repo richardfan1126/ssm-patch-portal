@@ -41,56 +41,8 @@ def handler(event, context):
                 next_token = ec2_response['NextToken']
             else:
                 next_token = None
-
-        patch_associations = {}
-        next_token = None
-        first_run = True
-
-        while next_token is not None or first_run:
-            first_run = False
-
-            request_args = {
-                "AssociationFilterList": [
-                    {
-                        "key": "Name",
-                        "value": "AWS-RunPatchBaseline"
-                    }
-                ],
-                "MaxResults": 50
-            }
-
-            if next_token is not None:
-                request_args["NextToken"] = next_token
-
-            patch_association_response = ssm.list_associations(**request_args)
-
-            for association in patch_association_response['Associations']:
-                association_name = association['AssociationName']
-
-                if not association_name.startswith("ssm-patch-portal-"):
-                    continue
-                
-                instance_id = None
-                for target in association['Targets']:
-                    if target['Key'] == 'InstanceIds':
-                        instance_id = target['Values'][0]
-                        break
-
-                if instance_id is None:
-                    continue
-
-                patch_associations[instance_id] = {
-                    "associationId": association["AssociationId"] if "AssociationId" in association else "",
-                    "overview": association["Overview"] if "Overview" in association else "",
-                    "lastExecutionDate": association["LastExecutionDate"].strftime("%Y-%m-%dT%H:%M:%SZ") if "LastExecutionDate" in association else "",
-                }
             
-            if 'NextToken' in patch_association_response:
-                next_token = patch_association_response['NextToken']
-            else:
-                next_token = None
-            
-        instances = []
+        instances = {}
         next_token = None
         first_run = True
 
@@ -120,19 +72,51 @@ def handler(event, context):
                     'name': ec2_names[instance_id] if instance_id in ec2_names else '',
                     'platformType': instance['PlatformType'] if 'PlatformType' in instance else '',
                     'platformName': instance['PlatformName'] if 'PlatformName' in instance else '',
-                    'patchAssociation': patch_associations[instance_id] if instance_id in patch_associations else {},
+                    'patchState': None,
                 }
                 
-                instances.append(item)
+                instances[instance_id] = item
             
             if 'NextToken' in ssm_instace_response:
                 next_token = ssm_instace_response['NextToken']
             else:
                 next_token = None
+        
+        next_token = None
+        first_run = True
+
+        while next_token is not None or first_run:
+            first_run = False
+
+            request_args = {
+                "InstanceIds": list(instances.keys()),
+                "MaxResults": 50
+            }
+
+            if next_token is not None:
+                request_args["NextToken"] = next_token
+
+            patch_states_response = ssm.describe_instance_patch_states(**request_args)
+
+            for patch_state in patch_states_response['InstancePatchStates']:
+                instance_id = patch_state['InstanceId']
+
+                if instance_id in instances:
+                    instances[instance_id]['patchState'] = {
+                        'InstalledCount': patch_state['InstalledCount'] if 'InstalledCount' in patch_state else None,
+                        'InstalledPendingRebootCount': patch_state['InstalledPendingRebootCount'] if 'InstalledPendingRebootCount' in patch_state else None,
+                        'MissingCount': patch_state['MissingCount'] if 'MissingCount' in patch_state else None,
+                        'FailedCount': patch_state['FailedCount'] if 'FailedCount' in patch_state else None,
+                    }
+            
+            if 'NextToken' in patch_states_response:
+                next_token = patch_states_response['NextToken']
+            else:
+                next_token = None
 
         
         api_response["statusCode"] = 200
-        api_response["body"] = json.dumps(instances)
+        api_response["body"] = json.dumps(list(instances.values()))
     except Exception as e:
         api_response["statusCode"] = 400
         api_response["body"] = json.dumps({
