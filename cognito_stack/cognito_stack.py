@@ -20,18 +20,9 @@ class CognitoStack(NestedStack):
 
         self.user_pool = cognito.UserPool(
             self, "UserPool",
-            auto_verify = {
-                "email": True
-            },
             self_sign_up_enabled = False,
             sign_in_aliases = {
-                "email": True,
                 "username": True
-            },
-            standard_attributes = {
-                "email": {
-                    "required": True
-                }
             },
             removal_policy = RemovalPolicy.DESTROY,
         )

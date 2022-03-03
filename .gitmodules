@@ -1,0 +1,3 @@
+[submodule "frontend"]
+	path = frontend
+	url = https://github.com/richardfan1126/ssm-patch-portal-frontend.git

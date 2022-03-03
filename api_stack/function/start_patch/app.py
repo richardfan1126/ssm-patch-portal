@@ -143,19 +143,22 @@ def handler(event, context):
         instance_id = request['instanceId']
         patches = request['patches']
 
+        export_override_list(instance_id, patches)
+
         # Check if patch association already exist
         query_association_response = query_association(instance_id)
 
         if query_association_response is None:
-            # Create a new association if none exist
+            # Create a new association if none exist (No need to trigger as new association will be executed automatically)
             create_association_response = create_association(instance_id)
             association = create_association_response["AssociationDescription"]
         else:
             association = query_association_response
+            
+            # Trigger the association if already exist
+            association_id = association['AssociationId']
+            execution = apply_association(association_id)
 
-        association_id = association['AssociationId']
-        export_override_list(instance_id, patches)
-        execution = apply_association(association_id)
 
         if execution is None:
             raise Exception("Failed to get execution detail")
