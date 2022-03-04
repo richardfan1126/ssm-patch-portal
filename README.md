@@ -22,4 +22,6 @@ $ ./deploy.sh
 
 ## Architecture
 
+![](https://raw.githubusercontent.com/richardfan1126/ssm-patch-portal/master/docs/architecture.jpg)
+
 To be done
