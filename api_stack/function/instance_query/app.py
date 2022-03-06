@@ -107,6 +107,7 @@ def handler(event, context):
                         'InstalledPendingRebootCount': patch_state['InstalledPendingRebootCount'] if 'InstalledPendingRebootCount' in patch_state else None,
                         'MissingCount': patch_state['MissingCount'] if 'MissingCount' in patch_state else None,
                         'FailedCount': patch_state['FailedCount'] if 'FailedCount' in patch_state else None,
+                        'OperationEndTime': patch_state['OperationEndTime'].strftime("%Y-%m-%dT%H:%M:%SZ") if 'OperationEndTime' in patch_state else None,
                     }
             
             if 'NextToken' in patch_states_response:

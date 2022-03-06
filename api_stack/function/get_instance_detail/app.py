@@ -21,6 +21,24 @@ def get_instance_name(instance_id):
 
     return None
 
+def get_instance_patch_state(instance_id):
+    patch_states_response = ssm.describe_instance_patch_states(
+        InstanceIds = [instance_id],
+    )
+
+    if len(patch_states_response['InstancePatchStates']) == 0:
+        return None
+
+    patch_state = patch_states_response['InstancePatchStates'][0]
+    
+    return {
+        'InstalledCount': patch_state['InstalledCount'] if 'InstalledCount' in patch_state else None,
+        'InstalledPendingRebootCount': patch_state['InstalledPendingRebootCount'] if 'InstalledPendingRebootCount' in patch_state else None,
+        'MissingCount': patch_state['MissingCount'] if 'MissingCount' in patch_state else None,
+        'FailedCount': patch_state['FailedCount'] if 'FailedCount' in patch_state else None,
+        'OperationEndTime': patch_state['OperationEndTime'].strftime("%Y-%m-%dT%H:%M:%SZ") if 'OperationEndTime' in patch_state else None,
+    }
+
 def get_missing_patches(instance_id):
     patches = []
     next_token = None
@@ -93,6 +111,7 @@ def handler(event, context):
         instance_name = get_instance_name(instance_id)
         missing_patches = get_missing_patches(instance_id)
         patch_association = get_patch_association(instance_id)
+        patch_state = get_instance_patch_state(instance_id)
 
         is_patching = False
         if patch_association is not None and 'Overview' in patch_association and patch_association['Overview']['Status'] == "Pending":
@@ -103,7 +122,8 @@ def handler(event, context):
             "instanceName": instance_name,
             "isPatching": is_patching,
             "missingPatchCount": len(missing_patches),
-            "missingPatches": missing_patches
+            "missingPatches": missing_patches,
+            "patchState": patch_state,
         })
     except Exception as e:
         api_response["statusCode"] = 400

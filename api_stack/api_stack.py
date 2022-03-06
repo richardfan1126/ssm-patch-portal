@@ -127,6 +127,7 @@ class ApiStack(NestedStack):
                 iam.PolicyStatement(
                     actions = [
                         "ssm:DescribeInstancePatches",
+                        "ssm:DescribeInstancePatchStates",
                         "ssm:ListAssociations",
                         "ec2:DescribeInstances",
                     ],

@@ -68,7 +68,7 @@ USERPOOL_ID=$(cat cdk-outputs.json | jq -r 'first(.[]).UserPoolId')
 echo -e "${GREEN}You can now create user in UserPool ${GREEN_BOLD}https://console.aws.amazon.com/cognito/users#/pool/${USERPOOL_ID}/users${NO_STYLE}"
 
 # Ask user to continue deploying backend or exit
-read -p "Continue to deploy frontend stack? (Y/n)" IS_CONTINUE
+read -p "Continue to deploy frontend stack? (Y/n) " IS_CONTINUE
 if [[ "${IS_CONTINUE}" == "n" ||  "${IS_CONTINUE}" == "N" ]]; then
     rm cdk-outputs.json
     exit 0

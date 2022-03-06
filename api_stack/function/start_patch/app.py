@@ -36,7 +36,8 @@ def create_association(instance_id):
         Name = "AWS-RunPatchBaseline",
         Parameters = {
             "Operation": ["Install"],
-            "InstallOverrideList": ["s3://{}/InstallOverrideLists/{}.yml".format(main_bucket_name, instance_id)]
+            "InstallOverrideList": ["s3://{}/InstallOverrideLists/{}.yml".format(main_bucket_name, instance_id)],
+            "RebootOption": ["NoReboot"],
         },
         Targets = [
             {
