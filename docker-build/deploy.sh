@@ -1,5 +1,7 @@
 #!/bin/bash
 
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
 RED='\033[0;31m'
 NO_STYLE='\033[0m'
 
@@ -11,7 +13,7 @@ fi
 
 set -e
 
-if [[ ! -f ../.env ]]; then
+if [[ ! -f $SCRIPT_DIR/../.env ]]; then
     >&2 echo -e "${RED}Please specify the parameters in .env file\nUse .env.sample as example${NO_STYLE}"
     exit 1
 fi
@@ -22,5 +24,5 @@ if [[ -z $AWS_CREDENTIAL_DIR ]]; then
     AWS_CREDENTIAL_DIR=~/.aws
 fi
 
-docker build -f Dockerfile -t ssm-patch-portal-build ..
+docker build -f $SCRIPT_DIR/Dockerfile -t ssm-patch-portal-build $SCRIPT_DIR/..
 docker run --volume $AWS_CREDENTIAL_DIR:/root/.aws/:ro -it ssm-patch-portal-build
