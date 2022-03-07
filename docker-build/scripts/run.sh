@@ -5,43 +5,9 @@ GREEN='\033[0;32m'
 GREEN_BOLD='\033[1;32m'
 NO_STYLE='\033[0m'
 
-command -v python3 2>&1 1>/dev/null
-if [[ $? -ne 0 ]]; then
-    >&2 echo -e "${RED}Please install python3 first${NO_STYLE}"
-    exit 1
-fi
-
-command -v pip3 2>&1 1>/dev/null
-if [[ $? -ne 0 ]]; then
-    >&2 echo -e "${RED}Please install pip3 first${NO_STYLE}"
-    exit 1
-fi
-
-command -v cdk 2>&1 1>/dev/null
-if [[ $? -ne 0 ]]; then
-    >&2 echo -e "${RED}Please install AWS CDK first${NO_STYLE}"
-    exit 1
-fi
-
-command -v jq 2>&1 1>/dev/null
-if [[ $? -ne 0 ]]; then
-    >&2 echo -e "${RED}Please install jq first${NO_STYLE}"
-    exit 1
-fi
-
-command -v npm 2>&1 1>/dev/null
-if [[ $? -ne 0 ]]; then
-    >&2 echo -e "${RED}Please install npm first${NO_STYLE}"
-    exit 1
-fi
-
-command -v npx 2>&1 1>/dev/null
-if [[ $? -ne 0 ]]; then
-    >&2 echo -e "${RED}Please install npx first${NO_STYLE}"
-    exit 1
-fi
-
 set -e
+
+cd /app
 
 if [[ -f .env ]]; then
     source .env
@@ -82,7 +48,7 @@ rm cdk-outputs.json
 # Build frontend webapp
 cd frontend
 npm install
-npx -p @angular/cli ng build
+npm_config_unsafe_perm=true npx -p @angular/cli ng build
 
 # Deploy frontend CDK stack
 cd ../frontend_stack

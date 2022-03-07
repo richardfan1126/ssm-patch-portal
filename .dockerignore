@@ -1,0 +1,16 @@
+.vscode
+.git
+.gitmodules
+.venv
+
+cdk.out
+cdk.context.json
+
+.dccache
+docs
+tests
+
+frontend/package-lock.json
+frontend/.angular
+frontend/node_modules
+frontend/dist

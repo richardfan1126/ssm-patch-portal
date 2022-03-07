@@ -10,11 +10,15 @@
 
 ### Prerequisite
 
+#### Local build
 * [AWS CDK](https://docs.aws.amazon.com/cdk/v2/guide/getting_started.html#getting_started_install)
 * [npm](https://nodejs.org/en/download/)
 * [npx](https://www.npmjs.com/package/npx)
 * [Python3 and pip3](https://www.python.org/downloads/)
 * [jq](https://stedolan.github.io/jq/download/) (Optional)
+
+#### Docker build
+* [Docker](https://docs.docker.com/get-docker/)
 
 ### Steps
 
@@ -41,8 +45,28 @@
    ```
 
 1. Run the deploy script
+
+   (For local build)
    ```bash
    ./deploy.sh
+   ```
+
+   ---
+
+   (For Docker build)
+
+   Run `./docker-build/deploy.sh`.
+   
+   ```bash
+   ./docker-build/deploy.sh
+   ```
+   
+   When prompted, specify the location of aws credential.
+   
+   More detail on: https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html#cli-configure-files-where. (Default: ~/.aws)
+   
+   ```bash
+   Please specify the location of AWS credential [~/.aws] 
    ```
 
 1. When prompted, go to the Amazon Cognito console (via the URL provided) and create an admin account.
