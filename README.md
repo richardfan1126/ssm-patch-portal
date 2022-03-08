@@ -30,13 +30,25 @@
 
 1. Create a `.env` file inside project root
 
-   Put in all the IAM Role ARNs that is attached to the targeted EC2 instances. This is for granting access to those EC2 instances over the S3 bucket containing install patch lists and command output.
+   Input the value for the following parameters
+   
+   1. **Ec2IamRoleArns**
+   
+      All the IAM Role ARNs that is attached to the targeted EC2 instances. This is for granting access to those EC2 instances over the S3 bucket containing install patch lists and command output.
 
-   ```
-   export PARAMETERS=Ec2IamRoleArns=<role_arn_1>,<role_arn_2>,...<role_arn_n>
-   ```
+      ```
+      export Ec2IamRoleArns=<role_arn_1>,<role_arn_2>,...,<role_arn_n>
+      ```
+   
+   1. **AdminEmail**
+      
+      The email address where the initial admin password will be sent to. Make sure this email address can receive incoming mail.
 
-1. Install and bootstrap required tools
+      ```
+      export AdminEmail=<admin_email_address>
+      ```
+
+1. (Optional) Install and bootstrap required tools
 
    For AWS CDK, make sure you have already run the [bootstrap](https://docs.aws.amazon.com/cdk/v2/guide/getting_started.html#getting_started_bootstrap) command
 
@@ -69,13 +81,7 @@
    Please specify the location of AWS credential [~/.aws] 
    ```
 
-1. When prompted, go to the Amazon Cognito console (via the URL provided) and create an admin account.
-
-   ```
-   You can now create user in UserPool https://console.aws.amazon.com/cognito/users#/pool/xxxxxxxx/users
-   ```
-
-   Then press Y + \<Enter\> to continue the frontend deployment.
+1. After the backend deployment, press Y + \<Enter\> to continue the frontend deployment.
 
    ```
    Continue to deploy frontend stack? (Y/n) Y
@@ -83,11 +89,12 @@
 
 1. When the deployment completes, you can go to the web portal via the URL provided.
 
+   Use the password, which was sent to your email, to login.
+
    ```
    Outputs:
     SsmPatchPortalFrontend.PortalURL = https://xxxxxxxxxxxxxx.cloudfront.net
-    Stack ARN:
-    arn:aws:cloudformation:us-east-1:123456789012:stack/SsmPatchPortalFrontend/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    ...
    ```
 
 ## Architecture

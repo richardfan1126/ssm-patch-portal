@@ -13,8 +13,14 @@ if [[ -f .env ]]; then
     source .env
 fi
 
-if [[ -z $PARAMETERS ]]; then
-    >&2 echo -e "${RED}Please specify the parameters in .env file\nUse .env.sample as example${NO_STYLE}"
+# Check if parameters are set
+if [[ -z $Ec2IamRoleArns ]]; then
+    >&2 echo -e "${RED}Please specify the Ec2IamRoleArns in .env file\nUse .env.sample as example${NO_STYLE}"
+    exit 1
+fi
+
+if [[ -z $AdminEmail ]]; then
+    >&2 echo -e "${RED}Please specify the AdminEmail in .env file\nUse .env.sample as example${NO_STYLE}"
     exit 1
 fi
 
@@ -27,11 +33,7 @@ pip3 install -r requirements.txt
 pip3 install -t api_stack/layer/start_patch/ -r api_stack/function/start_patch/requirements.txt
 
 # Deploy Backend CDK stack
-cdk deploy --parameters $PARAMETERS --outputs-file cdk-outputs.json
-
-# Prompt user to create user while waiting for frontend deployment
-USERPOOL_ID=$(cat cdk-outputs.json | jq -r 'first(.[]).UserPoolId')
-echo -e "${GREEN}You can now create user in UserPool ${GREEN_BOLD}https://console.aws.amazon.com/cognito/users#/pool/${USERPOOL_ID}/users${NO_STYLE}"
+cdk deploy --parameters Ec2IamRoleArns=$Ec2IamRoleArns --parameters AdminEmail=$AdminEmail --outputs-file cdk-outputs.json
 
 # Ask user to continue deploying backend or exit
 read -p "Continue to deploy frontend stack? (Y/n) " IS_CONTINUE
@@ -52,4 +54,4 @@ npm_config_unsafe_perm=true npx -p @angular/cli ng build
 
 # Deploy frontend CDK stack
 cd ../frontend_stack
-cdk deploy
+cdk deploy --require-approval never

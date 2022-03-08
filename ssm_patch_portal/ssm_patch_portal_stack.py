@@ -19,6 +19,11 @@ class SsmPatchPortal(Stack):
             "This is to grant EC2 instances permission to read the patch list from S3 bucket.",
         )
 
+        admin_email = aws_cdk.CfnParameter(
+            self, "AdminEmail",
+            description = "The admin email address for signing into the portal."
+        )
+
         s3_bucket_stack = S3BucketStack(self, "S3BucketStack",
             ec2_iam_role_arns = ec2_iam_role_arns
         )
@@ -30,7 +35,8 @@ class SsmPatchPortal(Stack):
         )
 
         cognito_stack = CognitoStack(self, "CognitoStack",
-            api_id = api_stack.api.rest_api_id
+            api_id = api_stack.api.rest_api_id,
+            admin_email = admin_email,
         )
 
         aws_cdk.CfnOutput(
