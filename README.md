@@ -97,8 +97,23 @@
     ...
    ```
 
+## Cleanup
+
+1. Delete CloudFormation Stacks
+
+   1. **SsmPatchPortal**
+   1. **SsmPatchPortalFrontend**
+
+1. Empty and delete S3 buckets. (The bucket name have the following prefix)
+
+   1. **ssmpatchportalfrontend-**
+   1. **ssmpatchportal-s3bucketsta-**
+
+1. Delete SSM associations
+
+   1. **ssm-patch-portal-***<instance_id>*
+   1. **ssm-patch-portal-scan**
+
 ## Architecture
 
 ![](https://raw.githubusercontent.com/richardfan1126/ssm-patch-portal/master/docs/architecture.jpg)
-
-To be done
